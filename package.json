@@ -1,0 +1,116 @@
+{
+  "name": "codex-account-switcher",
+  "displayName": "Codex Account Switcher",
+  "description": "Switch Codex auth.json between multiple local accounts.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:codexAccountsView",
+    "onCommand:codexAccounts.add",
+    "onCommand:codexAccounts.switch",
+    "onCommand:codexAccounts.showActive",
+    "onCommand:codexAccounts.openStorage",
+    "onCommand:codexAccounts.reloadWindow",
+    "onCommand:codexAccounts.remove",
+    "onCommand:codexAccounts.refreshView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codexAccountsContainer",
+          "title": "Codex Switcher",
+          "icon": "media/codex-switcher.svg"
+        }
+      ]
+    },
+    "views": {
+      "codexAccountsContainer": [
+        {
+          "type": "webview",
+          "id": "codexAccountsView",
+          "name": ""
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codexAccounts.add",
+        "title": "Codex Accounts: Add Account",
+        "icon": "$(add)"
+      },
+      {
+        "command": "codexAccounts.switch",
+        "title": "Codex Accounts: Switch Account",
+        "icon": "media/codex-switcher.svg"
+      },
+      {
+        "command": "codexAccounts.showActive",
+        "title": "Codex Accounts: Show Active Account",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "codexAccounts.openStorage",
+        "title": "Codex Accounts: Open Storage Folder",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "codexAccounts.reloadWindow",
+        "title": "Codex Accounts: Reload VS Code Window",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codexAccounts.remove",
+        "title": "Codex Accounts: Remove Saved Account",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "codexAccounts.refreshView",
+        "title": "Codex Accounts: Refresh View",
+        "icon": "$(refresh)"
+      }
+    ],
+    "configuration": {
+      "title": "Codex Account Switcher",
+      "properties": {
+        "codexAccountSwitcher.codexHome": {
+          "type": "string",
+          "default": "",
+          "description": "Codex home path. Defaults to ~/.codex."
+        },
+        "codexAccountSwitcher.switcherHome": {
+          "type": "string",
+          "default": "",
+          "description": "Switcher storage path. Defaults to ~/.codex-switcher."
+        },
+        "codexAccountSwitcher.promptReloadAfterSwitch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ask to reload VS Code after switching Codex account."
+        },
+        "codexAccountSwitcher.autoUseNewAccount": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically activate newly added Codex account after login."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.5"
+  }
+}
