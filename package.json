@@ -3,7 +3,7 @@
   "displayName": "Codex Account Switcher",
   "description": "Switch Codex auth.json between multiple local accounts.",
   "version": "0.0.1",
-  "publisher": "local",
+  "publisher": "luccasoliva",
   "private": true,
   "engines": {
     "vscode": "^1.90.0"

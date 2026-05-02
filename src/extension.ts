@@ -260,8 +260,8 @@ async function addAccount(): Promise<void> {
 
   const name = await vscode.window.showInputBox({
     title: "Add Codex Account",
-    prompt: "Digite um nome para esta conta Codex.",
-    placeHolder: "Pessoal, Trabalho, Cliente X..."
+    prompt: "Enter a name for this Codex account.",
+    placeHolder: "Personal, Work, Client X..."
   });
 
   if (!name) return;
@@ -269,7 +269,7 @@ async function addAccount(): Promise<void> {
   const id = normalizeAccountId(name);
 
   if (!id) {
-    vscode.window.showErrorMessage("Nome de conta inválido.");
+    vscode.window.showErrorMessage("Invalid account name.");
     return;
   }
 
@@ -278,12 +278,12 @@ async function addAccount(): Promise<void> {
 
   if (await exists(authPath)) {
     const overwrite = await vscode.window.showWarningMessage(
-      `A conta "${name}" já possui auth.json salvo. Deseja refazer o login e sobrescrever?`,
-      "Sobrescrever",
-      "Cancelar"
+      `The account "${name}" already has a saved auth.json. Do you want to login again and overwrite?`,
+      "Overwrite",
+      "Cancel"
     );
 
-    if (overwrite !== "Sobrescrever") {
+    if (overwrite !== "Overwrite") {
       return;
     }
   }
@@ -301,12 +301,12 @@ async function addAccount(): Promise<void> {
   sendCodexLoginToTerminal(terminal);
 
   vscode.window.showInformationMessage(
-    `Faça login no navegador para a conta "${name}". A extensão vai detectar o auth.json automaticamente.`
+    `Please login in the browser for account "${name}". The extension will automatically detect auth.json.`
   );
 
   await webviewProvider?.setBusy(
     true,
-    `Aguardando login da conta "${name}"...`
+    `Waiting for login for account "${name}"...`
   );
 
   const detected = await waitForAuthJson(authPath, 180000);
@@ -315,7 +315,7 @@ async function addAccount(): Promise<void> {
 
   if (!detected) {
     vscode.window.showWarningMessage(
-      `Não detectei auth.json para "${name}" ainda. Quando o login terminar, tente adicionar novamente.`
+      `Did not detect auth.json for "${name}" yet. When login completes, try adding the account again.`
     );
     await refreshUi();
     return;
@@ -332,12 +332,12 @@ async function addAccount(): Promise<void> {
   }
 
   const action = await vscode.window.showInformationMessage(
-    `Conta "${name}" adicionada com sucesso.`,
-    "Usar agora",
-    "Fechar"
+    `Account "${name}" added successfully.`,
+    "Use now",
+    "Close"
   );
 
-  if (action === "Usar agora") {
+  if (action === "Use now") {
     await switchToAccount(id, name);
   }
 }
@@ -347,11 +347,11 @@ async function switchAccount(): Promise<void> {
 
   if (data.accounts.length === 0) {
     const action = await vscode.window.showInformationMessage(
-      "Nenhuma conta Codex salva ainda.",
-      "Adicionar conta"
+      "No Codex accounts saved yet.",
+      "Add account"
     );
 
-    if (action === "Adicionar conta") {
+    if (action === "Add account") {
       await addAccount();
     }
 
@@ -363,7 +363,7 @@ async function switchAccount(): Promise<void> {
 
     return {
       label: `${isActive ? "$(check) " : "$(account) "}${account.name}`,
-      description: isActive ? "Ativa" : account.id,
+      description: isActive ? "Active" : account.id,
       detail: accountAuthPath(account.id),
       account
     };
@@ -372,7 +372,7 @@ async function switchAccount(): Promise<void> {
   items.push({
     label: "$(add) Add new account",
     description: "Run codex login in isolated CODEX_HOME",
-    detail: "Adicionar uma nova conta Codex",
+    detail: "Add a new Codex account",
     account: {
       id: "__add__",
       name: "Add new account",
@@ -383,7 +383,7 @@ async function switchAccount(): Promise<void> {
 
   const selected = await vscode.window.showQuickPick(items, {
     title: "Switch Codex Account",
-    placeHolder: "Escolha a conta Codex para ativar"
+    placeHolder: "Choose the Codex account to activate"
   });
 
   if (!selected) return;
@@ -403,12 +403,12 @@ async function switchToAccount(id: string, name: string): Promise<void> {
 
   if (!(await exists(source))) {
     vscode.window.showErrorMessage(
-      `auth.json não encontrado para a conta "${name}".`
+      `auth.json not found for account "${name}".`
     );
     return;
   }
 
-  await webviewProvider?.setBusy(true, `Trocando para "${name}"...`);
+  await webviewProvider?.setBusy(true, `Switching to "${name}"...`);
 
   try {
     await backupCurrentAuth();
@@ -422,14 +422,14 @@ async function switchToAccount(id: string, name: string): Promise<void> {
     getConfig().get<boolean>("promptReloadAfterSwitch") ?? true;
 
   if (!shouldPromptReload) {
-    vscode.window.showInformationMessage(`Codex alterado para "${name}".`);
+    vscode.window.showInformationMessage(`Codex switched to "${name}".`);
     return;
   }
 
   const action = await vscode.window.showInformationMessage(
-    `Codex alterado para "${name}". Recarregue o VS Code para garantir que a extensão do Codex releia o auth.json.`,
+    `Codex switched to "${name}". Please reload VS Code to ensure the Codex extension rereads auth.json.`,
     "Reload Window",
-    "Depois"
+    "Later"
   );
 
   if (action === "Reload Window") {
@@ -441,14 +441,14 @@ async function showActive(): Promise<void> {
   const active = await getActiveAccount();
 
   if (!active) {
-    vscode.window.showInformationMessage("Nenhuma conta Codex ativa registrada.");
+    vscode.window.showInformationMessage("No active Codex account registered.");
     return;
   }
 
   const authPath = accountAuthPath(active.id);
 
   vscode.window.showInformationMessage(
-    `Conta Codex ativa: ${active.name}\n${authPath}`
+    `Active Codex account: ${active.name}\n${authPath}`
   );
 }
 
@@ -465,32 +465,32 @@ async function removeAccount(): Promise<void> {
   const data = await readAccounts();
 
   if (data.accounts.length === 0) {
-    vscode.window.showInformationMessage("Nenhuma conta salva para remover.");
+    vscode.window.showInformationMessage("No saved accounts to remove.");
     return;
   }
 
   const selected = await vscode.window.showQuickPick(
     data.accounts.map((account) => ({
       label: account.name,
-      description: account.id === data.active ? "Ativa" : account.id,
+      description: account.id === data.active ? "Active" : account.id,
       detail: accountAuthPath(account.id),
       account
     })),
     {
       title: "Remove Saved Codex Account",
-      placeHolder: "Escolha a conta salva para remover"
+      placeHolder: "Choose a saved account to remove"
     }
   );
 
   if (!selected) return;
 
   const confirm = await vscode.window.showWarningMessage(
-    `Remover a conta salva "${selected.account.name}"? Isso apaga a cópia local em .codex-switcher, mas não faz logout no site.`,
-    "Remover",
-    "Cancelar"
+    `Remove saved account "${selected.account.name}"? This deletes the local copy in .codex-switcher, but does not log out of the site.`,
+    "Remove",
+    "Cancel"
   );
 
-  if (confirm !== "Remover") return;
+  if (confirm !== "Remove") return;
 
   const accountHome = accountHomePath(selected.account.id);
 
@@ -512,7 +512,7 @@ async function removeAccount(): Promise<void> {
   await refreshUi();
 
   vscode.window.showInformationMessage(
-    `Conta "${selected.account.name}" removida do switcher.`
+    `Account "${selected.account.name}" removed from switcher.`
   );
 }
 
@@ -521,17 +521,17 @@ async function removeAccountById(id: string): Promise<void> {
   const account = data.accounts.find((item) => item.id === id);
 
   if (!account) {
-    vscode.window.showErrorMessage("Conta não encontrada.");
+    vscode.window.showErrorMessage("Account not found.");
     return;
   }
 
   const confirm = await vscode.window.showWarningMessage(
-    `Remover a conta salva "${account.name}"?`,
-    "Remover",
-    "Cancelar"
+    `Remove saved account "${account.name}"?`,
+    "Remove",
+    "Cancel"
   );
 
-  if (confirm !== "Remover") return;
+  if (confirm !== "Remove") return;
 
   await fs.rm(accountHomePath(id), {
     recursive: true,
@@ -547,7 +547,7 @@ async function removeAccountById(id: string): Promise<void> {
 
   await refreshUi();
 
-  vscode.window.showInformationMessage(`Conta "${account.name}" removida.`);
+  vscode.window.showInformationMessage(`Account "${account.name}" removed.`);
 }
 
 async function reloadWindow(): Promise<void> {
