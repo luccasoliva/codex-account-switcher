@@ -3,29 +3,29 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 
-type ProfileMeta = {
+type SessionMeta = {
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
 };
 
-type ProfilesJson = {
+type SessionsJson = {
   active?: string;
-  profiles: ProfileMeta[];
+  sessions: SessionMeta[];
 };
 
 type Paths = {
   codexHome: string;
   switcherHome: string;
   codexAuthPath: string;
-  profilesJsonPath: string;
-  profilesDir: string;
+  sessionsJsonPath: string;
+  sessionsDir: string;
   backupsDir: string;
 };
 
 let statusBar: vscode.StatusBarItem;
-let webviewProvider: CodexProfilesWebviewProvider | undefined;
+let webviewProvider: CodexSessionsWebviewProvider | undefined;
 
 function expandHome(input: string): string {
   const value = input.trim();
@@ -40,7 +40,7 @@ function expandHome(input: string): string {
 }
 
 function getConfig() {
-  return vscode.workspace.getConfiguration("codexProfileSwitcher");
+  return vscode.workspace.getConfiguration("codexSessionSwitcher");
 }
 
 function getPaths(): Paths {
@@ -60,13 +60,13 @@ function getPaths(): Paths {
     codexHome,
     switcherHome,
     codexAuthPath: path.join(codexHome, "auth.json"),
-    profilesJsonPath: path.join(switcherHome, "profiles.json"),
-    profilesDir: path.join(switcherHome, "profiles"),
+    sessionsJsonPath: path.join(switcherHome, "sessions.json"),
+    sessionsDir: path.join(switcherHome, "sessions"),
     backupsDir: path.join(switcherHome, "backups")
   };
 }
 
-function normalizeProfileId(name: string): string {
+function normalizeSessionId(name: string): string {
   return name
     .trim()
     .toLowerCase()
@@ -76,12 +76,12 @@ function normalizeProfileId(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function profileHomePath(profileId: string): string {
-  return path.join(getPaths().profilesDir, profileId);
+function sessionHomePath(sessionId: string): string {
+  return path.join(getPaths().sessionsDir, sessionId);
 }
 
-function profileAuthPath(profileId: string): string {
-  return path.join(profileHomePath(profileId), "auth.json");
+function sessionAuthPath(sessionId: string): string {
+  return path.join(sessionHomePath(sessionId), "auth.json");
 }
 
 async function exists(filePath: string): Promise<boolean> {
@@ -98,48 +98,48 @@ async function ensureStorage(): Promise<void> {
 
   await fs.mkdir(p.codexHome, { recursive: true });
   await fs.mkdir(p.switcherHome, { recursive: true });
-  await fs.mkdir(p.profilesDir, { recursive: true });
+  await fs.mkdir(p.sessionsDir, { recursive: true });
   await fs.mkdir(p.backupsDir, { recursive: true });
 
-  if (!(await exists(p.profilesJsonPath))) {
-    const initial: ProfilesJson = {
-      profiles: []
+  if (!(await exists(p.sessionsJsonPath))) {
+    const initial: SessionsJson = {
+      sessions: []
     };
 
     await fs.writeFile(
-      p.profilesJsonPath,
+      p.sessionsJsonPath,
       JSON.stringify(initial, null, 2),
       "utf8"
     );
   }
 }
 
-async function readProfiles(): Promise<ProfilesJson> {
+async function readSessions(): Promise<SessionsJson> {
   await ensureStorage();
 
   const p = getPaths();
-  const raw = await fs.readFile(p.profilesJsonPath, "utf8");
+  const raw = await fs.readFile(p.sessionsJsonPath, "utf8");
 
   try {
-    const parsed = JSON.parse(raw) as ProfilesJson;
+    const parsed = JSON.parse(raw) as SessionsJson;
 
-    if (!Array.isArray(parsed.profiles)) {
-      return { profiles: [] };
+    if (!Array.isArray(parsed.sessions)) {
+      return { sessions: [] };
     }
 
     return parsed;
   } catch {
-    return { profiles: [] };
+    return { sessions: [] };
   }
 }
 
-async function writeProfiles(data: ProfilesJson): Promise<void> {
+async function writeSessions(data: SessionsJson): Promise<void> {
   await ensureStorage();
 
   const p = getPaths();
 
   await fs.writeFile(
-    p.profilesJsonPath,
+    p.sessionsJsonPath,
     JSON.stringify(data, null, 2),
     "utf8"
   );
@@ -169,17 +169,17 @@ async function backupCurrentAuth(): Promise<void> {
   await secureCopy(p.codexAuthPath, backupPath);
 }
 
-async function saveProfileMetadata(id: string, name: string): Promise<void> {
-  const data = await readProfiles();
+async function saveSessionMetadata(id: string, name: string): Promise<void> {
+  const data = await readSessions();
   const now = new Date().toISOString();
 
-  const existing = data.profiles.find((profile) => profile.id === id);
+  const existing = data.sessions.find((session) => session.id === id);
 
   if (existing) {
     existing.name = name;
     existing.updatedAt = now;
   } else {
-    data.profiles.push({
+    data.sessions.push({
       id,
       name,
       createdAt: now,
@@ -189,42 +189,42 @@ async function saveProfileMetadata(id: string, name: string): Promise<void> {
 
   data.active = id;
 
-  await writeProfiles(data);
+  await writeSessions(data);
   await refreshUi();
 }
 
-async function setActiveProfile(id: string): Promise<void> {
-  const data = await readProfiles();
+async function setActiveSession(id: string): Promise<void> {
+  const data = await readSessions();
   data.active = id;
 
-  await writeProfiles(data);
+  await writeSessions(data);
   await refreshUi();
 }
 
-async function getActiveProfile(): Promise<ProfileMeta | undefined> {
-  const data = await readProfiles();
+async function getActiveSession(): Promise<SessionMeta | undefined> {
+  const data = await readSessions();
 
   if (!data.active) {
     return undefined;
   }
 
-  return data.profiles.find((profile) => profile.id === data.active);
+  return data.sessions.find((session) => session.id === data.active);
 }
 
 async function updateStatusBar(): Promise<void> {
   if (!statusBar) return;
 
-  const active = await getActiveProfile();
+  const active = await getActiveSession();
 
   if (active) {
     statusBar.text = ` Codex: ${active.name}`;
-    statusBar.tooltip = `Active Codex profile: ${active.name}\nClick to switch profile.`;
+    statusBar.tooltip = `Active Codex session: ${active.name}\nClick to switch session.`;
   } else {
-    statusBar.text = " Codex: No profile";
-    statusBar.tooltip = "No Codex profile tracked. Click to open Codex Profile Switcher.";
+    statusBar.text = " Codex: No session";
+    statusBar.tooltip = "No Codex session tracked. Click to open Codex Session Switcher.";
   }
 
-  statusBar.command = "codexProfiles.focusView";
+  statusBar.command = "codexSessions.focusView";
   statusBar.show();
 }
 
@@ -255,30 +255,30 @@ function sendCodexLoginToTerminal(terminal: vscode.Terminal): void {
   terminal.sendText("codex login");
 }
 
-async function addProfile(): Promise<void> {
+async function addSession(): Promise<void> {
   await ensureStorage();
 
   const name = await vscode.window.showInputBox({
-    title: "Add Codex Profile",
-    prompt: "Enter a name for this Codex profile.",
+    title: "Add Codex Session",
+    prompt: "Enter a name for this Codex session.",
     placeHolder: "Personal, Work, Client X..."
   });
 
   if (!name) return;
 
-  const id = normalizeProfileId(name);
+  const id = normalizeSessionId(name);
 
   if (!id) {
-    vscode.window.showErrorMessage("Invalid profile name.");
+    vscode.window.showErrorMessage("Invalid session name.");
     return;
   }
 
-  const profileHome = profileHomePath(id);
-  const authPath = profileAuthPath(id);
+  const sessionHome = sessionHomePath(id);
+  const authPath = sessionAuthPath(id);
 
   if (await exists(authPath)) {
     const overwrite = await vscode.window.showWarningMessage(
-      `The profile "${name}" already has a saved auth.json. Do you want to login again and overwrite?`,
+      `The session "${name}" already has a saved auth.json. Do you want to login again and overwrite?`,
       "Overwrite",
       "Cancel"
     );
@@ -288,12 +288,12 @@ async function addProfile(): Promise<void> {
     }
   }
 
-  await fs.mkdir(profileHome, { recursive: true });
+  await fs.mkdir(sessionHome, { recursive: true });
 
   const terminal = vscode.window.createTerminal({
     name: `Codex Login: ${name}`,
     env: {
-      CODEX_HOME: profileHome
+      CODEX_HOME: sessionHome
     }
   });
 
@@ -301,12 +301,12 @@ async function addProfile(): Promise<void> {
   sendCodexLoginToTerminal(terminal);
 
   vscode.window.showInformationMessage(
-    `Please login in the browser for profile "${name}". The extension will automatically detect auth.json.`
+    `Please login in the browser for session "${name}". The extension will automatically detect auth.json.`
   );
 
   await webviewProvider?.setBusy(
     true,
-    `Waiting for login for profile "${name}"...`
+    `Waiting for login for session "${name}"...`
   );
 
   const detected = await waitForAuthJson(authPath, 180000);
@@ -315,95 +315,95 @@ async function addProfile(): Promise<void> {
 
   if (!detected) {
     vscode.window.showWarningMessage(
-      `Did not detect auth.json for "${name}" yet. When login completes, try adding the profile again.`
+      `Did not detect auth.json for "${name}" yet. When login completes, try adding the session again.`
     );
     await refreshUi();
     return;
   }
 
-  await saveProfileMetadata(id, name);
+  await saveSessionMetadata(id, name);
 
-  const autoUseNewProfile =
-    getConfig().get<boolean>("autoUseNewProfile") ?? false;
+  const autoUseNewSession =
+    getConfig().get<boolean>("autoUseNewSession") ?? false;
 
-  if (autoUseNewProfile) {
-    await switchToProfile(id, name);
+  if (autoUseNewSession) {
+    await switchToSession(id, name);
     return;
   }
 
   const action = await vscode.window.showInformationMessage(
-    `Profile "${name}" added successfully.`,
+    `Session "${name}" added successfully.`,
     "Use now",
     "Close"
   );
 
   if (action === "Use now") {
-    await switchToProfile(id, name);
+    await switchToSession(id, name);
   }
 }
 
-async function switchProfile(): Promise<void> {
-  const data = await readProfiles();
+async function switchSession(): Promise<void> {
+  const data = await readSessions();
 
-  if (data.profiles.length === 0) {
+  if (data.sessions.length === 0) {
     const action = await vscode.window.showInformationMessage(
-      "No Codex profiles saved yet.",
-      "Add profile"
+      "No Codex sessions saved yet.",
+      "Add session"
     );
 
-    if (action === "Add profile") {
-      await addProfile();
+    if (action === "Add session") {
+      await addSession();
     }
 
     return;
   }
 
-  const items = data.profiles.map((profile) => {
-    const isActive = profile.id === data.active;
+  const items = data.sessions.map((session) => {
+    const isActive = session.id === data.active;
 
     return {
-      label: `${isActive ? "$(check) " : " "}${profile.name}`,
-      description: isActive ? "Active" : profile.id,
-      detail: profileAuthPath(profile.id),
-      profile
+      label: `${isActive ? "$(check) " : " "}${session.name}`,
+      description: isActive ? "Active" : session.id,
+      detail: sessionAuthPath(session.id),
+      session
     };
   });
 
   items.push({
-    label: "$(add) Add new profile",
+    label: "$(add) Add new session",
     description: "Run codex login in isolated CODEX_HOME",
-    detail: "Add a new Codex profile",
-    profile: {
+    detail: "Add a new Codex session",
+    session: {
       id: "__add__",
-      name: "Add new profile",
+      name: "Add new session",
       createdAt: "",
       updatedAt: ""
     }
   });
 
   const selected = await vscode.window.showQuickPick(items, {
-    title: "Switch Codex Profile",
-    placeHolder: "Choose the Codex profile to activate"
+    title: "Switch Codex Session",
+    placeHolder: "Choose the Codex session to activate"
   });
 
   if (!selected) return;
 
-  if (selected.profile.id === "__add__") {
-    await addProfile();
+  if (selected.session.id === "__add__") {
+    await addSession();
     return;
   }
 
-  await switchToProfile(selected.profile.id, selected.profile.name);
+  await switchToSession(selected.session.id, selected.session.name);
 }
 
-async function switchToProfile(id: string, name: string): Promise<void> {
+async function switchToSession(id: string, name: string): Promise<void> {
   const p = getPaths();
-  const source = profileAuthPath(id);
+  const source = sessionAuthPath(id);
   const target = p.codexAuthPath;
 
   if (!(await exists(source))) {
     vscode.window.showErrorMessage(
-      `auth.json not found for profile "${name}".`
+      `auth.json not found for session "${name}".`
     );
     return;
   }
@@ -413,7 +413,7 @@ async function switchToProfile(id: string, name: string): Promise<void> {
   try {
     await backupCurrentAuth();
     await secureCopy(source, target);
-    await setActiveProfile(id);
+    await setActiveSession(id);
   } finally {
     await webviewProvider?.setBusy(false);
   }
@@ -438,17 +438,17 @@ async function switchToProfile(id: string, name: string): Promise<void> {
 }
 
 async function showActive(): Promise<void> {
-  const active = await getActiveProfile();
+  const active = await getActiveSession();
 
   if (!active) {
-    vscode.window.showInformationMessage("No active Codex profile registered.");
+    vscode.window.showInformationMessage("No active Codex session registered.");
     return;
   }
 
-  const authPath = profileAuthPath(active.id);
+  const authPath = sessionAuthPath(active.id);
 
   vscode.window.showInformationMessage(
-    `Active Codex profile: ${active.name}\n${authPath}`
+    `Active Codex session: ${active.name}\n${authPath}`
   );
 }
 
@@ -461,93 +461,93 @@ async function openStorage(): Promise<void> {
   await vscode.env.openExternal(uri);
 }
 
-async function removeProfile(): Promise<void> {
-  const data = await readProfiles();
+async function removeSession(): Promise<void> {
+  const data = await readSessions();
 
-  if (data.profiles.length === 0) {
-    vscode.window.showInformationMessage("No saved profiles to remove.");
+  if (data.sessions.length === 0) {
+    vscode.window.showInformationMessage("No saved sessions to remove.");
     return;
   }
 
   const selected = await vscode.window.showQuickPick(
-    data.profiles.map((profile) => ({
-      label: profile.name,
-      description: profile.id === data.active ? "Active" : profile.id,
-      detail: profileAuthPath(profile.id),
-      profile
+    data.sessions.map((session) => ({
+      label: session.name,
+      description: session.id === data.active ? "Active" : session.id,
+      detail: sessionAuthPath(session.id),
+      session
     })),
     {
-      title: "Remove Saved Codex Profile",
-      placeHolder: "Choose a saved profile to remove"
+      title: "Remove Saved Codex Session",
+      placeHolder: "Choose a saved session to remove"
     }
   );
 
   if (!selected) return;
 
   const confirm = await vscode.window.showWarningMessage(
-    `Remove saved profile "${selected.profile.name}"? This deletes the local copy in .codex-switcher, but does not log out of the site.`,
+    `Remove saved session "${selected.session.name}"? This deletes the local copy in .codex-switcher, but does not log out of the site.`,
     "Remove",
     "Cancel"
   );
 
   if (confirm !== "Remove") return;
 
-  const profileHome = profileHomePath(selected.profile.id);
+  const sessionHome = sessionHomePath(selected.session.id);
 
-  await fs.rm(profileHome, {
+  await fs.rm(sessionHome, {
     recursive: true,
     force: true
   });
 
-  const nextProfiles = data.profiles.filter(
-    (profile) => profile.id !== selected.profile.id
+  const nextSessions = data.sessions.filter(
+    (session) => session.id !== selected.session.id
   );
 
-  const nextData: ProfilesJson = {
-    profiles: nextProfiles,
-    active: data.active === selected.profile.id ? undefined : data.active
+  const nextData: SessionsJson = {
+    sessions: nextSessions,
+    active: data.active === selected.session.id ? undefined : data.active
   };
 
-  await writeProfiles(nextData);
+  await writeSessions(nextData);
   await refreshUi();
 
   vscode.window.showInformationMessage(
-    `Profile "${selected.profile.name}" removed from switcher.`
+    `Session "${selected.session.name}" removed from switcher.`
   );
 }
 
-async function removeProfileById(id: string): Promise<void> {
-  const data = await readProfiles();
-  const profile = data.profiles.find((item) => item.id === id);
+async function removeSessionById(id: string): Promise<void> {
+  const data = await readSessions();
+  const session = data.sessions.find((item) => item.id === id);
 
-  if (!profile) {
-    vscode.window.showErrorMessage("Profile not found.");
+  if (!session) {
+    vscode.window.showErrorMessage("Session not found.");
     return;
   }
 
   const confirm = await vscode.window.showWarningMessage(
-    `Remove saved profile "${profile.name}"?`,
+    `Remove saved session "${session.name}"?`,
     "Remove",
     "Cancel"
   );
 
   if (confirm !== "Remove") return;
 
-  await fs.rm(profileHomePath(id), {
+  await fs.rm(sessionHomePath(id), {
     recursive: true,
     force: true
   });
 
-  const nextProfiles = data.profiles.filter((item) => item.id !== id);
+  const nextSessions = data.sessions.filter((item) => item.id !== id);
 
-  await writeProfiles({
-    profiles: nextProfiles,
+  await writeSessions({
+    sessions: nextSessions,
     active: data.active === id ? undefined : data.active
   });
 
   await refreshUi();
 
-  vscode.window.showInformationMessage(`Profile "${profile.name}" removed.`);
+  vscode.window.showInformationMessage(`Session "${session.name}" removed.`);
 }
 
 async function reloadWindow(): Promise<void> {
@@ -555,7 +555,7 @@ async function reloadWindow(): Promise<void> {
 }
 
 async function focusView(): Promise<void> {
-  await vscode.commands.executeCommand("codexProfilesView.focus");
+  await vscode.commands.executeCommand("codexSessionsView.focus");
 }
 
 function escapeHtml(value: string): string {
@@ -566,7 +566,7 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
+class CodexSessionsWebviewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private busy = false;
   private busyMessage = "";
@@ -584,18 +584,18 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
       try {
         switch (message.type) {
           case "add":
-            await addProfile();
+            await addSession();
             break;
 
           case "switch":
             if (typeof message.id === "string" && typeof message.name === "string") {
-              await switchToProfile(message.id, message.name);
+              await switchToSession(message.id, message.name);
             }
             break;
 
           case "remove":
             if (typeof message.id === "string") {
-              await removeProfileById(message.id);
+              await removeSessionById(message.id);
             }
             break;
 
@@ -634,43 +634,43 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
   async refresh(): Promise<void> {
     if (!this.view) return;
 
-    const data = await readProfiles();
+    const data = await readSessions();
     const p = getPaths();
 
     this.view.webview.html = this.getHtml(data, p);
   }
 
-  private getHtml(data: ProfilesJson, p: Paths): string {
-    const profiles = data.profiles;
-    const active = profiles.find((item) => item.id === data.active);
+  private getHtml(data: SessionsJson, p: Paths): string {
+    const sessions = data.sessions;
+    const active = sessions.find((item) => item.id === data.active);
 
-    const profileRows =
-      profiles.length === 0
+    const sessionRows =
+      sessions.length === 0
         ? `
         <div class="empty">
-          <div class="empty-title">No profiles yet</div>
-          <div class="empty-text">Add a Codex profile to get started.</div>
+          <div class="empty-title">No sessions yet</div>
+          <div class="empty-text">Add a Codex session to get started.</div>
         </div>
       `
-        : profiles
-          .map((profile) => {
-            const isActive = profile.id === data.active;
-            const safeId = escapeHtml(profile.id);
-            const safeName = escapeHtml(profile.name);
-            const safeAuthPath = escapeHtml(profileAuthPath(profile.id));
+        : sessions
+          .map((session) => {
+            const isActive = session.id === data.active;
+            const safeId = escapeHtml(session.id);
+            const safeName = escapeHtml(session.name);
+            const safeAuthPath = escapeHtml(sessionAuthPath(session.id));
 
             return `
-              <div class="profile-row ${isActive ? "active" : ""}">
-                <div class="profile-main">
-                  <div class="profile-title-row">
+              <div class="session-row ${isActive ? "active" : ""}">
+                <div class="session-main">
+                  <div class="session-title-row">
                     <span class="status-dot ${isActive ? "on" : ""}"></span>
-                    <span class="profile-name">${safeName}</span>
+                    <span class="session-name">${safeName}</span>
                     ${isActive ? `<span class="active-pill">Active</span>` : ""}
                   </div>
-                  <div class="profile-path">${safeAuthPath}</div>
+                  <div class="session-path">${safeAuthPath}</div>
                 </div>
 
-                <div class="profile-actions">
+                <div class="session-actions">
                   ${isActive
                 ? `<button class="icon-button" title="Use again" data-action="switch" data-id="${safeId}" data-name="${safeName}">↻</button>`
                 : `<button class="small-button" data-action="switch" data-id="${safeId}" data-name="${safeName}">Use</button>`
@@ -863,13 +863,13 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
           font-weight: 600;
         }
 
-        .profile-list {
+        .session-list {
           display: flex;
           flex-direction: column;
           gap: 5px;
         }
 
-        .profile-row {
+        .session-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -880,21 +880,21 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
           background: transparent;
         }
 
-        .profile-row:hover {
+        .session-row:hover {
           background: rgba(127, 127, 127, 0.06);
         }
 
-        .profile-row.active {
+        .session-row.active {
           border-color: var(--border);
           background: rgba(127, 127, 127, 0.07);
         }
 
-        .profile-main {
+        .session-main {
           min-width: 0;
           flex: 1;
         }
 
-        .profile-title-row {
+        .session-title-row {
           display: flex;
           align-items: center;
           gap: 6px;
@@ -915,7 +915,7 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
           opacity: 1;
         }
 
-        .profile-name {
+        .session-name {
           font-size: 12px;
           font-weight: 600;
           white-space: nowrap;
@@ -935,7 +935,7 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
           flex: 0 0 auto;
         }
 
-        .profile-path {
+        .session-path {
           margin-top: 3px;
           color: var(--muted);
           font-size: 10px;
@@ -944,7 +944,7 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
           text-overflow: ellipsis;
         }
 
-        .profile-actions {
+        .session-actions {
           display: flex;
           align-items: center;
           gap: 4px;
@@ -1035,7 +1035,7 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
       <div class="page">
         <div class="header">
           <div class="brand">
-            <div class="brand-title">Codex Profiles</div>
+            <div class="brand-title">Codex Sessions</div>
             <div class="brand-subtitle">Switch local Codex sessions</div>
           </div>
 
@@ -1043,7 +1043,7 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
         </div>
 
         <div class="active-card">
-          <div class="section-label">Active profile</div>
+          <div class="section-label">Active session</div>
           <div class="active-name">${active ? escapeHtml(active.name) : "None"}</div>
           ${this.busy
         ? `<div class="busy">${escapeHtml(this.busyMessage || "Working...")}</div>`
@@ -1052,7 +1052,7 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
         </div>
 
         <div class="toolbar">
-          <button class="primary-button" data-action="add">Add profile</button>
+          <button class="primary-button" data-action="add">Add session</button>
 
           <div class="ghost-row">
             <button class="ghost-button" data-action="reload">Reload</button>
@@ -1060,10 +1060,10 @@ class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
           </div>
         </div>
 
-        <div class="section-title">Saved profiles</div>
+        <div class="section-title">Saved sessions</div>
 
-        <div class="profile-list">
-          ${profileRows}
+        <div class="session-list">
+          ${sessionRows}
         </div>
 
         <div class="footer">
@@ -1133,33 +1133,33 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(statusBar);
 
-  webviewProvider = new CodexProfilesWebviewProvider(context.extensionUri);
+  webviewProvider = new CodexSessionsWebviewProvider(context.extensionUri);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
-      "codexProfilesView",
+      "codexSessionsView",
       webviewProvider
     )
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("codexProfiles.add", addProfile),
-    vscode.commands.registerCommand("codexProfiles.switch", switchProfile),
-    vscode.commands.registerCommand("codexProfiles.showActive", showActive),
-    vscode.commands.registerCommand("codexProfiles.openStorage", openStorage),
-    vscode.commands.registerCommand("codexProfiles.reloadWindow", reloadWindow),
-    vscode.commands.registerCommand("codexProfiles.remove", removeProfile),
-    vscode.commands.registerCommand("codexProfiles.refreshView", async () => {
+    vscode.commands.registerCommand("codexSessions.add", addSession),
+    vscode.commands.registerCommand("codexSessions.switch", switchSession),
+    vscode.commands.registerCommand("codexSessions.showActive", showActive),
+    vscode.commands.registerCommand("codexSessions.openStorage", openStorage),
+    vscode.commands.registerCommand("codexSessions.reloadWindow", reloadWindow),
+    vscode.commands.registerCommand("codexSessions.remove", removeSession),
+    vscode.commands.registerCommand("codexSessions.refreshView", async () => {
       await refreshUi();
     }),
-    vscode.commands.registerCommand("codexProfiles.focusView", focusView)
+    vscode.commands.registerCommand("codexSessions.focusView", focusView)
   );
 
   ensureStorage()
     .then(refreshUi)
     .catch((error) => {
       vscode.window.showErrorMessage(
-        `Codex Profile Switcher failed to initialize: ${String(error)}`
+        `Codex Session Switcher failed to initialize: ${String(error)}`
       );
     });
 }

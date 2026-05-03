@@ -1,22 +1,22 @@
 {
-  "name": "codex-profile-switcher",
-  "displayName": "Codex Profile Switcher",
-  "description": "Switch Codex auth.json between multiple local profiles.",
+  "name": "codex-session-switcher",
+  "displayName": "Codex Session Switcher",
+  "description": "Switch Codex auth.json between multiple local sessions.",
   "version": "0.0.1",
   "publisher": "luccasoliva",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/luccasoliva/codex-profile-switcher.git"
+    "url": "https://github.com/luccasoliva/codex-session-switcher.git"
   },
   "bugs": {
-    "url": "https://github.com/luccasoliva/codex-profile-switcher/issues"
+    "url": "https://github.com/luccasoliva/codex-session-switcher/issues"
   },
-  "homepage": "https://github.com/luccasoliva/codex-profile-switcher#readme",
+  "homepage": "https://github.com/luccasoliva/codex-session-switcher#readme",
   "keywords": [
     "codex",
     "openai",
-    "profile",
+    "session",
     "switcher",
     "auth",
     "vscode"
@@ -31,94 +31,94 @@
   "categories": ["Other"],
   "activationEvents": [
     "onStartupFinished",
-    "onView:codexProfilesView",
-    "onCommand:codexProfiles.add",
-    "onCommand:codexProfiles.switch",
-    "onCommand:codexProfiles.showActive",
-    "onCommand:codexProfiles.openStorage",
-    "onCommand:codexProfiles.reloadWindow",
-    "onCommand:codexProfiles.remove",
-    "onCommand:codexProfiles.refreshView"
+    "onView:codexSessionsView",
+    "onCommand:codexSessions.add",
+    "onCommand:codexSessions.switch",
+    "onCommand:codexSessions.showActive",
+    "onCommand:codexSessions.openStorage",
+    "onCommand:codexSessions.reloadWindow",
+    "onCommand:codexSessions.remove",
+    "onCommand:codexSessions.refreshView"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "codexProfilesContainer",
+          "id": "codexSessionsContainer",
           "title": "Codex Switcher",
           "icon": "media/codex-switcher.svg"
         }
       ]
     },
     "views": {
-      "codexProfilesContainer": [
+      "codexSessionsContainer": [
         {
           "type": "webview",
-          "id": "codexProfilesView",
-          "name": "Profiles"
+          "id": "codexSessionsView",
+          "name": "Sessions"
         }
       ]
     },
     "commands": [
       {
-        "command": "codexProfiles.add",
-        "title": "Codex Profiles: Add Profile",
+        "command": "codexSessions.add",
+        "title": "Codex Sessions: Add Session",
         "icon": "$(add)"
       },
       {
-        "command": "codexProfiles.switch",
-        "title": "Codex Profiles: Switch Profile",
+        "command": "codexSessions.switch",
+        "title": "Codex Sessions: Switch Session",
         "icon": ""
       },
       {
-        "command": "codexProfiles.showActive",
-        "title": "Codex Profiles: Show Active Profile",
+        "command": "codexSessions.showActive",
+        "title": "Codex Sessions: Show Active Session",
         "icon": "$(eye)"
       },
       {
-        "command": "codexProfiles.openStorage",
-        "title": "Codex Profiles: Open Storage Folder",
+        "command": "codexSessions.openStorage",
+        "title": "Codex Sessions: Open Storage Folder",
         "icon": "$(folder-opened)"
       },
       {
-        "command": "codexProfiles.reloadWindow",
-        "title": "Codex Profiles: Reload VS Code Window",
+        "command": "codexSessions.reloadWindow",
+        "title": "Codex Sessions: Reload VS Code Window",
         "icon": "$(refresh)"
       },
       {
-        "command": "codexProfiles.remove",
-        "title": "Codex Profiles: Remove Saved Profile",
+        "command": "codexSessions.remove",
+        "title": "Codex Sessions: Remove Saved Session",
         "icon": "$(trash)"
       },
       {
-        "command": "codexProfiles.refreshView",
-        "title": "Codex Profiles: Refresh View",
+        "command": "codexSessions.refreshView",
+        "title": "Codex Sessions: Refresh View",
         "icon": "$(refresh)"
       }
     ],
     "configuration": {
-      "title": "Codex Profile Switcher",
+      "title": "Codex Session Switcher",
       "properties": {
-        "codexProfileSwitcher.codexHome": {
+        "codexSessionSwitcher.codexHome": {
           "type": "string",
           "default": "",
           "description": "Codex home path. Defaults to ~/.codex."
         },
-        "codexProfileSwitcher.switcherHome": {
+        "codexSessionSwitcher.switcherHome": {
           "type": "string",
           "default": "",
           "description": "Switcher storage path. Defaults to ~/.codex-switcher."
         },
-        "codexProfileSwitcher.promptReloadAfterSwitch": {
+        "codexSessionSwitcher.promptReloadAfterSwitch": {
           "type": "boolean",
           "default": true,
-          "description": "Ask to reload VS Code after switching Codex profile."
+          "description": "Ask to reload VS Code after switching Codex session."
         },
-        "codexProfileSwitcher.autoUseNewProfile": {
+        "codexSessionSwitcher.autoUseNewSession": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically activate newly added Codex profile after login."
+          "description": "Automatically activate newly added Codex session after login."
         }
       }
     }
