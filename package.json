@@ -1,5 +1,5 @@
 {
-  "name": "codex-session-switcher",
+  "name": "codex-switcher",
   "displayName": "Codex Session Switcher",
   "description": "Switch Codex auth.json between multiple local sessions.",
   "version": "0.0.2",
