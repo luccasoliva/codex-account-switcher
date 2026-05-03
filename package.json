@@ -4,7 +4,12 @@
   "description": "Switch Codex auth.json between multiple local accounts.",
   "version": "0.0.1",
   "publisher": "luccasoliva",
+  "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luccasoliva/codex-account-switcher.git"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
