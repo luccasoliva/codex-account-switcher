@@ -3,29 +3,29 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 
-type AccountMeta = {
+type ProfileMeta = {
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
 };
 
-type AccountsJson = {
+type ProfilesJson = {
   active?: string;
-  accounts: AccountMeta[];
+  profiles: ProfileMeta[];
 };
 
 type Paths = {
   codexHome: string;
   switcherHome: string;
   codexAuthPath: string;
-  accountsJsonPath: string;
-  accountsDir: string;
+  profilesJsonPath: string;
+  profilesDir: string;
   backupsDir: string;
 };
 
 let statusBar: vscode.StatusBarItem;
-let webviewProvider: CodexAccountsWebviewProvider | undefined;
+let webviewProvider: CodexProfilesWebviewProvider | undefined;
 
 function expandHome(input: string): string {
   const value = input.trim();
@@ -40,7 +40,7 @@ function expandHome(input: string): string {
 }
 
 function getConfig() {
-  return vscode.workspace.getConfiguration("codexAccountSwitcher");
+  return vscode.workspace.getConfiguration("codexProfileSwitcher");
 }
 
 function getPaths(): Paths {
@@ -60,13 +60,13 @@ function getPaths(): Paths {
     codexHome,
     switcherHome,
     codexAuthPath: path.join(codexHome, "auth.json"),
-    accountsJsonPath: path.join(switcherHome, "accounts.json"),
-    accountsDir: path.join(switcherHome, "accounts"),
+    profilesJsonPath: path.join(switcherHome, "profiles.json"),
+    profilesDir: path.join(switcherHome, "profiles"),
     backupsDir: path.join(switcherHome, "backups")
   };
 }
 
-function normalizeAccountId(name: string): string {
+function normalizeProfileId(name: string): string {
   return name
     .trim()
     .toLowerCase()
@@ -76,12 +76,12 @@ function normalizeAccountId(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function accountHomePath(accountId: string): string {
-  return path.join(getPaths().accountsDir, accountId);
+function profileHomePath(profileId: string): string {
+  return path.join(getPaths().profilesDir, profileId);
 }
 
-function accountAuthPath(accountId: string): string {
-  return path.join(accountHomePath(accountId), "auth.json");
+function profileAuthPath(profileId: string): string {
+  return path.join(profileHomePath(profileId), "auth.json");
 }
 
 async function exists(filePath: string): Promise<boolean> {
@@ -98,48 +98,48 @@ async function ensureStorage(): Promise<void> {
 
   await fs.mkdir(p.codexHome, { recursive: true });
   await fs.mkdir(p.switcherHome, { recursive: true });
-  await fs.mkdir(p.accountsDir, { recursive: true });
+  await fs.mkdir(p.profilesDir, { recursive: true });
   await fs.mkdir(p.backupsDir, { recursive: true });
 
-  if (!(await exists(p.accountsJsonPath))) {
-    const initial: AccountsJson = {
-      accounts: []
+  if (!(await exists(p.profilesJsonPath))) {
+    const initial: ProfilesJson = {
+      profiles: []
     };
 
     await fs.writeFile(
-      p.accountsJsonPath,
+      p.profilesJsonPath,
       JSON.stringify(initial, null, 2),
       "utf8"
     );
   }
 }
 
-async function readAccounts(): Promise<AccountsJson> {
+async function readProfiles(): Promise<ProfilesJson> {
   await ensureStorage();
 
   const p = getPaths();
-  const raw = await fs.readFile(p.accountsJsonPath, "utf8");
+  const raw = await fs.readFile(p.profilesJsonPath, "utf8");
 
   try {
-    const parsed = JSON.parse(raw) as AccountsJson;
+    const parsed = JSON.parse(raw) as ProfilesJson;
 
-    if (!Array.isArray(parsed.accounts)) {
-      return { accounts: [] };
+    if (!Array.isArray(parsed.profiles)) {
+      return { profiles: [] };
     }
 
     return parsed;
   } catch {
-    return { accounts: [] };
+    return { profiles: [] };
   }
 }
 
-async function writeAccounts(data: AccountsJson): Promise<void> {
+async function writeProfiles(data: ProfilesJson): Promise<void> {
   await ensureStorage();
 
   const p = getPaths();
 
   await fs.writeFile(
-    p.accountsJsonPath,
+    p.profilesJsonPath,
     JSON.stringify(data, null, 2),
     "utf8"
   );
@@ -169,17 +169,17 @@ async function backupCurrentAuth(): Promise<void> {
   await secureCopy(p.codexAuthPath, backupPath);
 }
 
-async function saveAccountMetadata(id: string, name: string): Promise<void> {
-  const data = await readAccounts();
+async function saveProfileMetadata(id: string, name: string): Promise<void> {
+  const data = await readProfiles();
   const now = new Date().toISOString();
 
-  const existing = data.accounts.find((account) => account.id === id);
+  const existing = data.profiles.find((profile) => profile.id === id);
 
   if (existing) {
     existing.name = name;
     existing.updatedAt = now;
   } else {
-    data.accounts.push({
+    data.profiles.push({
       id,
       name,
       createdAt: now,
@@ -189,42 +189,42 @@ async function saveAccountMetadata(id: string, name: string): Promise<void> {
 
   data.active = id;
 
-  await writeAccounts(data);
+  await writeProfiles(data);
   await refreshUi();
 }
 
-async function setActiveAccount(id: string): Promise<void> {
-  const data = await readAccounts();
+async function setActiveProfile(id: string): Promise<void> {
+  const data = await readProfiles();
   data.active = id;
 
-  await writeAccounts(data);
+  await writeProfiles(data);
   await refreshUi();
 }
 
-async function getActiveAccount(): Promise<AccountMeta | undefined> {
-  const data = await readAccounts();
+async function getActiveProfile(): Promise<ProfileMeta | undefined> {
+  const data = await readProfiles();
 
   if (!data.active) {
     return undefined;
   }
 
-  return data.accounts.find((account) => account.id === data.active);
+  return data.profiles.find((profile) => profile.id === data.active);
 }
 
 async function updateStatusBar(): Promise<void> {
   if (!statusBar) return;
 
-  const active = await getActiveAccount();
+  const active = await getActiveProfile();
 
   if (active) {
-    statusBar.text = `$(account) Codex: ${active.name}`;
-    statusBar.tooltip = `Active Codex account: ${active.name}\nClick to switch account.`;
+    statusBar.text = ` Codex: ${active.name}`;
+    statusBar.tooltip = `Active Codex profile: ${active.name}\nClick to switch profile.`;
   } else {
-    statusBar.text = "$(account) Codex: No account";
-    statusBar.tooltip = "No Codex account tracked. Click to open Codex Account Switcher.";
+    statusBar.text = " Codex: No profile";
+    statusBar.tooltip = "No Codex profile tracked. Click to open Codex Profile Switcher.";
   }
 
-  statusBar.command = "codexAccounts.focusView";
+  statusBar.command = "codexProfiles.focusView";
   statusBar.show();
 }
 
@@ -255,30 +255,30 @@ function sendCodexLoginToTerminal(terminal: vscode.Terminal): void {
   terminal.sendText("codex login");
 }
 
-async function addAccount(): Promise<void> {
+async function addProfile(): Promise<void> {
   await ensureStorage();
 
   const name = await vscode.window.showInputBox({
-    title: "Add Codex Account",
-    prompt: "Enter a name for this Codex account.",
+    title: "Add Codex Profile",
+    prompt: "Enter a name for this Codex profile.",
     placeHolder: "Personal, Work, Client X..."
   });
 
   if (!name) return;
 
-  const id = normalizeAccountId(name);
+  const id = normalizeProfileId(name);
 
   if (!id) {
-    vscode.window.showErrorMessage("Invalid account name.");
+    vscode.window.showErrorMessage("Invalid profile name.");
     return;
   }
 
-  const accountHome = accountHomePath(id);
-  const authPath = accountAuthPath(id);
+  const profileHome = profileHomePath(id);
+  const authPath = profileAuthPath(id);
 
   if (await exists(authPath)) {
     const overwrite = await vscode.window.showWarningMessage(
-      `The account "${name}" already has a saved auth.json. Do you want to login again and overwrite?`,
+      `The profile "${name}" already has a saved auth.json. Do you want to login again and overwrite?`,
       "Overwrite",
       "Cancel"
     );
@@ -288,12 +288,12 @@ async function addAccount(): Promise<void> {
     }
   }
 
-  await fs.mkdir(accountHome, { recursive: true });
+  await fs.mkdir(profileHome, { recursive: true });
 
   const terminal = vscode.window.createTerminal({
     name: `Codex Login: ${name}`,
     env: {
-      CODEX_HOME: accountHome
+      CODEX_HOME: profileHome
     }
   });
 
@@ -301,12 +301,12 @@ async function addAccount(): Promise<void> {
   sendCodexLoginToTerminal(terminal);
 
   vscode.window.showInformationMessage(
-    `Please login in the browser for account "${name}". The extension will automatically detect auth.json.`
+    `Please login in the browser for profile "${name}". The extension will automatically detect auth.json.`
   );
 
   await webviewProvider?.setBusy(
     true,
-    `Waiting for login for account "${name}"...`
+    `Waiting for login for profile "${name}"...`
   );
 
   const detected = await waitForAuthJson(authPath, 180000);
@@ -315,95 +315,95 @@ async function addAccount(): Promise<void> {
 
   if (!detected) {
     vscode.window.showWarningMessage(
-      `Did not detect auth.json for "${name}" yet. When login completes, try adding the account again.`
+      `Did not detect auth.json for "${name}" yet. When login completes, try adding the profile again.`
     );
     await refreshUi();
     return;
   }
 
-  await saveAccountMetadata(id, name);
+  await saveProfileMetadata(id, name);
 
-  const autoUseNewAccount =
-    getConfig().get<boolean>("autoUseNewAccount") ?? false;
+  const autoUseNewProfile =
+    getConfig().get<boolean>("autoUseNewProfile") ?? false;
 
-  if (autoUseNewAccount) {
-    await switchToAccount(id, name);
+  if (autoUseNewProfile) {
+    await switchToProfile(id, name);
     return;
   }
 
   const action = await vscode.window.showInformationMessage(
-    `Account "${name}" added successfully.`,
+    `Profile "${name}" added successfully.`,
     "Use now",
     "Close"
   );
 
   if (action === "Use now") {
-    await switchToAccount(id, name);
+    await switchToProfile(id, name);
   }
 }
 
-async function switchAccount(): Promise<void> {
-  const data = await readAccounts();
+async function switchProfile(): Promise<void> {
+  const data = await readProfiles();
 
-  if (data.accounts.length === 0) {
+  if (data.profiles.length === 0) {
     const action = await vscode.window.showInformationMessage(
-      "No Codex accounts saved yet.",
-      "Add account"
+      "No Codex profiles saved yet.",
+      "Add profile"
     );
 
-    if (action === "Add account") {
-      await addAccount();
+    if (action === "Add profile") {
+      await addProfile();
     }
 
     return;
   }
 
-  const items = data.accounts.map((account) => {
-    const isActive = account.id === data.active;
+  const items = data.profiles.map((profile) => {
+    const isActive = profile.id === data.active;
 
     return {
-      label: `${isActive ? "$(check) " : "$(account) "}${account.name}`,
-      description: isActive ? "Active" : account.id,
-      detail: accountAuthPath(account.id),
-      account
+      label: `${isActive ? "$(check) " : " "}${profile.name}`,
+      description: isActive ? "Active" : profile.id,
+      detail: profileAuthPath(profile.id),
+      profile
     };
   });
 
   items.push({
-    label: "$(add) Add new account",
+    label: "$(add) Add new profile",
     description: "Run codex login in isolated CODEX_HOME",
-    detail: "Add a new Codex account",
-    account: {
+    detail: "Add a new Codex profile",
+    profile: {
       id: "__add__",
-      name: "Add new account",
+      name: "Add new profile",
       createdAt: "",
       updatedAt: ""
     }
   });
 
   const selected = await vscode.window.showQuickPick(items, {
-    title: "Switch Codex Account",
-    placeHolder: "Choose the Codex account to activate"
+    title: "Switch Codex Profile",
+    placeHolder: "Choose the Codex profile to activate"
   });
 
   if (!selected) return;
 
-  if (selected.account.id === "__add__") {
-    await addAccount();
+  if (selected.profile.id === "__add__") {
+    await addProfile();
     return;
   }
 
-  await switchToAccount(selected.account.id, selected.account.name);
+  await switchToProfile(selected.profile.id, selected.profile.name);
 }
 
-async function switchToAccount(id: string, name: string): Promise<void> {
+async function switchToProfile(id: string, name: string): Promise<void> {
   const p = getPaths();
-  const source = accountAuthPath(id);
+  const source = profileAuthPath(id);
   const target = p.codexAuthPath;
 
   if (!(await exists(source))) {
     vscode.window.showErrorMessage(
-      `auth.json not found for account "${name}".`
+      `auth.json not found for profile "${name}".`
     );
     return;
   }
@@ -413,7 +413,7 @@ async function switchToAccount(id: string, name: string): Promise<void> {
   try {
     await backupCurrentAuth();
     await secureCopy(source, target);
-    await setActiveAccount(id);
+    await setActiveProfile(id);
   } finally {
     await webviewProvider?.setBusy(false);
   }
@@ -438,17 +438,17 @@ async function switchToAccount(id: string, name: string): Promise<void> {
 }
 
 async function showActive(): Promise<void> {
-  const active = await getActiveAccount();
+  const active = await getActiveProfile();
 
   if (!active) {
-    vscode.window.showInformationMessage("No active Codex account registered.");
+    vscode.window.showInformationMessage("No active Codex profile registered.");
     return;
   }
 
-  const authPath = accountAuthPath(active.id);
+  const authPath = profileAuthPath(active.id);
 
   vscode.window.showInformationMessage(
-    `Active Codex account: ${active.name}\n${authPath}`
+    `Active Codex profile: ${active.name}\n${authPath}`
   );
 }
 
@@ -461,93 +461,93 @@ async function openStorage(): Promise<void> {
   await vscode.env.openExternal(uri);
 }
 
-async function removeAccount(): Promise<void> {
-  const data = await readAccounts();
+async function removeProfile(): Promise<void> {
+  const data = await readProfiles();
 
-  if (data.accounts.length === 0) {
-    vscode.window.showInformationMessage("No saved accounts to remove.");
+  if (data.profiles.length === 0) {
+    vscode.window.showInformationMessage("No saved profiles to remove.");
     return;
   }
 
   const selected = await vscode.window.showQuickPick(
-    data.accounts.map((account) => ({
-      label: account.name,
-      description: account.id === data.active ? "Active" : account.id,
-      detail: accountAuthPath(account.id),
-      account
+    data.profiles.map((profile) => ({
+      label: profile.name,
+      description: profile.id === data.active ? "Active" : profile.id,
+      detail: profileAuthPath(profile.id),
+      profile
     })),
     {
-      title: "Remove Saved Codex Account",
-      placeHolder: "Choose a saved account to remove"
+      title: "Remove Saved Codex Profile",
+      placeHolder: "Choose a saved profile to remove"
     }
   );
 
   if (!selected) return;
 
   const confirm = await vscode.window.showWarningMessage(
-    `Remove saved account "${selected.account.name}"? This deletes the local copy in .codex-switcher, but does not log out of the site.`,
+    `Remove saved profile "${selected.profile.name}"? This deletes the local copy in .codex-switcher, but does not log out of the site.`,
     "Remove",
     "Cancel"
   );
 
   if (confirm !== "Remove") return;
 
-  const accountHome = accountHomePath(selected.account.id);
+  const profileHome = profileHomePath(selected.profile.id);
 
-  await fs.rm(accountHome, {
+  await fs.rm(profileHome, {
     recursive: true,
     force: true
   });
 
-  const nextAccounts = data.accounts.filter(
-    (account) => account.id !== selected.account.id
+  const nextProfiles = data.profiles.filter(
+    (profile) => profile.id !== selected.profile.id
   );
 
-  const nextData: AccountsJson = {
-    accounts: nextAccounts,
-    active: data.active === selected.account.id ? undefined : data.active
+  const nextData: ProfilesJson = {
+    profiles: nextProfiles,
+    active: data.active === selected.profile.id ? undefined : data.active
   };
 
-  await writeAccounts(nextData);
+  await writeProfiles(nextData);
   await refreshUi();
 
   vscode.window.showInformationMessage(
-    `Account "${selected.account.name}" removed from switcher.`
+    `Profile "${selected.profile.name}" removed from switcher.`
   );
 }
 
-async function removeAccountById(id: string): Promise<void> {
-  const data = await readAccounts();
-  const account = data.accounts.find((item) => item.id === id);
+async function removeProfileById(id: string): Promise<void> {
+  const data = await readProfiles();
+  const profile = data.profiles.find((item) => item.id === id);
 
-  if (!account) {
-    vscode.window.showErrorMessage("Account not found.");
+  if (!profile) {
+    vscode.window.showErrorMessage("Profile not found.");
     return;
   }
 
   const confirm = await vscode.window.showWarningMessage(
-    `Remove saved account "${account.name}"?`,
+    `Remove saved profile "${profile.name}"?`,
     "Remove",
     "Cancel"
   );
 
   if (confirm !== "Remove") return;
 
-  await fs.rm(accountHomePath(id), {
+  await fs.rm(profileHomePath(id), {
     recursive: true,
     force: true
   });
 
-  const nextAccounts = data.accounts.filter((item) => item.id !== id);
+  const nextProfiles = data.profiles.filter((item) => item.id !== id);
 
-  await writeAccounts({
-    accounts: nextAccounts,
+  await writeProfiles({
+    profiles: nextProfiles,
     active: data.active === id ? undefined : data.active
   });
 
   await refreshUi();
 
-  vscode.window.showInformationMessage(`Account "${account.name}" removed.`);
+  vscode.window.showInformationMessage(`Profile "${profile.name}" removed.`);
 }
 
 async function reloadWindow(): Promise<void> {
@@ -555,7 +555,7 @@ async function reloadWindow(): Promise<void> {
 }
 
 async function focusView(): Promise<void> {
-  await vscode.commands.executeCommand("codexAccountsView.focus");
+  await vscode.commands.executeCommand("codexProfilesView.focus");
 }
 
 function escapeHtml(value: string): string {
@@ -566,7 +566,7 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
+class CodexProfilesWebviewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private busy = false;
   private busyMessage = "";
@@ -584,18 +584,18 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
       try {
         switch (message.type) {
           case "add":
-            await addAccount();
+            await addProfile();
             break;
 
           case "switch":
             if (typeof message.id === "string" && typeof message.name === "string") {
-              await switchToAccount(message.id, message.name);
+              await switchToProfile(message.id, message.name);
             }
             break;
 
           case "remove":
             if (typeof message.id === "string") {
-              await removeAccountById(message.id);
+              await removeProfileById(message.id);
             }
             break;
 
@@ -634,43 +634,43 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
   async refresh(): Promise<void> {
     if (!this.view) return;
 
-    const data = await readAccounts();
+    const data = await readProfiles();
     const p = getPaths();
 
     this.view.webview.html = this.getHtml(data, p);
   }
 
-  private getHtml(data: AccountsJson, p: Paths): string {
-    const accounts = data.accounts;
-    const active = accounts.find((item) => item.id === data.active);
+  private getHtml(data: ProfilesJson, p: Paths): string {
+    const profiles = data.profiles;
+    const active = profiles.find((item) => item.id === data.active);
 
-    const accountRows =
-      accounts.length === 0
+    const profileRows =
+      profiles.length === 0
         ? `
         <div class="empty">
-          <div class="empty-title">No accounts yet</div>
-          <div class="empty-text">Add a Codex account to get started.</div>
+          <div class="empty-title">No profiles yet</div>
+          <div class="empty-text">Add a Codex profile to get started.</div>
         </div>
       `
-        : accounts
-          .map((account) => {
-            const isActive = account.id === data.active;
-            const safeId = escapeHtml(account.id);
-            const safeName = escapeHtml(account.name);
-            const safeAuthPath = escapeHtml(accountAuthPath(account.id));
+        : profiles
+          .map((profile) => {
+            const isActive = profile.id === data.active;
+            const safeId = escapeHtml(profile.id);
+            const safeName = escapeHtml(profile.name);
+            const safeAuthPath = escapeHtml(profileAuthPath(profile.id));
 
             return `
-              <div class="account-row ${isActive ? "active" : ""}">
-                <div class="account-main">
-                  <div class="account-title-row">
+              <div class="profile-row ${isActive ? "active" : ""}">
+                <div class="profile-main">
+                  <div class="profile-title-row">
                     <span class="status-dot ${isActive ? "on" : ""}"></span>
-                    <span class="account-name">${safeName}</span>
+                    <span class="profile-name">${safeName}</span>
                     ${isActive ? `<span class="active-pill">Active</span>` : ""}
                   </div>
-                  <div class="account-path">${safeAuthPath}</div>
+                  <div class="profile-path">${safeAuthPath}</div>
                 </div>
 
-                <div class="account-actions">
+                <div class="profile-actions">
                   ${isActive
                 ? `<button class="icon-button" title="Use again" data-action="switch" data-id="${safeId}" data-name="${safeName}">↻</button>`
                 : `<button class="small-button" data-action="switch" data-id="${safeId}" data-name="${safeName}">Use</button>`
@@ -863,13 +863,13 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
           font-weight: 600;
         }
 
-        .account-list {
+        .profile-list {
           display: flex;
           flex-direction: column;
           gap: 5px;
         }
 
-        .account-row {
+        .profile-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -880,21 +880,21 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
           background: transparent;
         }
 
-        .account-row:hover {
+        .profile-row:hover {
           background: rgba(127, 127, 127, 0.06);
         }
 
-        .account-row.active {
+        .profile-row.active {
           border-color: var(--border);
           background: rgba(127, 127, 127, 0.07);
         }
 
-        .account-main {
+        .profile-main {
           min-width: 0;
           flex: 1;
         }
 
-        .account-title-row {
+        .profile-title-row {
           display: flex;
           align-items: center;
           gap: 6px;
@@ -915,7 +915,7 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
           opacity: 1;
         }
 
-        .account-name {
+        .profile-name {
           font-size: 12px;
           font-weight: 600;
           white-space: nowrap;
@@ -935,7 +935,7 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
           flex: 0 0 auto;
         }
 
-        .account-path {
+        .profile-path {
           margin-top: 3px;
           color: var(--muted);
           font-size: 10px;
@@ -944,7 +944,7 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
           text-overflow: ellipsis;
         }
 
-        .account-actions {
+        .profile-actions {
           display: flex;
           align-items: center;
           gap: 4px;
@@ -1035,7 +1035,7 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
       <div class="page">
         <div class="header">
           <div class="brand">
-            <div class="brand-title">Codex Accounts</div>
+            <div class="brand-title">Codex Profiles</div>
             <div class="brand-subtitle">Switch local Codex sessions</div>
           </div>
 
@@ -1043,7 +1043,7 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
         </div>
 
         <div class="active-card">
-          <div class="section-label">Active account</div>
+          <div class="section-label">Active profile</div>
           <div class="active-name">${active ? escapeHtml(active.name) : "None"}</div>
           ${this.busy
         ? `<div class="busy">${escapeHtml(this.busyMessage || "Working...")}</div>`
@@ -1052,7 +1052,7 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
         </div>
 
         <div class="toolbar">
-          <button class="primary-button" data-action="add">Add account</button>
+          <button class="primary-button" data-action="add">Add profile</button>
 
           <div class="ghost-row">
             <button class="ghost-button" data-action="reload">Reload</button>
@@ -1060,10 +1060,10 @@ class CodexAccountsWebviewProvider implements vscode.WebviewViewProvider {
           </div>
         </div>
 
-        <div class="section-title">Saved accounts</div>
+        <div class="section-title">Saved profiles</div>
 
-        <div class="account-list">
-          ${accountRows}
+        <div class="profile-list">
+          ${profileRows}
         </div>
 
         <div class="footer">
@@ -1133,33 +1133,33 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(statusBar);
 
-  webviewProvider = new CodexAccountsWebviewProvider(context.extensionUri);
+  webviewProvider = new CodexProfilesWebviewProvider(context.extensionUri);
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
-      "codexAccountsView",
+      "codexProfilesView",
       webviewProvider
     )
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("codexAccounts.add", addAccount),
-    vscode.commands.registerCommand("codexAccounts.switch", switchAccount),
-    vscode.commands.registerCommand("codexAccounts.showActive", showActive),
-    vscode.commands.registerCommand("codexAccounts.openStorage", openStorage),
-    vscode.commands.registerCommand("codexAccounts.reloadWindow", reloadWindow),
-    vscode.commands.registerCommand("codexAccounts.remove", removeAccount),
-    vscode.commands.registerCommand("codexAccounts.refreshView", async () => {
+    vscode.commands.registerCommand("codexProfiles.add", addProfile),
+    vscode.commands.registerCommand("codexProfiles.switch", switchProfile),
+    vscode.commands.registerCommand("codexProfiles.showActive", showActive),
+    vscode.commands.registerCommand("codexProfiles.openStorage", openStorage),
+    vscode.commands.registerCommand("codexProfiles.reloadWindow", reloadWindow),
+    vscode.commands.registerCommand("codexProfiles.remove", removeProfile),
+    vscode.commands.registerCommand("codexProfiles.refreshView", async () => {
       await refreshUi();
     }),
-    vscode.commands.registerCommand("codexAccounts.focusView", focusView)
+    vscode.commands.registerCommand("codexProfiles.focusView", focusView)
   );
 
   ensureStorage()
     .then(refreshUi)
     .catch((error) => {
       vscode.window.showErrorMessage(
-        `Codex Account Switcher failed to initialize: ${String(error)}`
+        `Codex Profile Switcher failed to initialize: ${String(error)}`
       );
     });
 }

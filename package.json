@@ -1,22 +1,22 @@
 {
-  "name": "codex-account-switcher",
-  "displayName": "Codex Account Switcher",
-  "description": "Switch Codex auth.json between multiple local accounts.",
+  "name": "codex-profile-switcher",
+  "displayName": "Codex Profile Switcher",
+  "description": "Switch Codex auth.json between multiple local profiles.",
   "version": "0.0.1",
   "publisher": "luccasoliva",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/luccasoliva/codex-account-switcher.git"
+    "url": "https://github.com/luccasoliva/codex-profile-switcher.git"
   },
   "bugs": {
-    "url": "https://github.com/luccasoliva/codex-account-switcher/issues"
+    "url": "https://github.com/luccasoliva/codex-profile-switcher/issues"
   },
-  "homepage": "https://github.com/luccasoliva/codex-account-switcher#readme",
+  "homepage": "https://github.com/luccasoliva/codex-profile-switcher#readme",
   "keywords": [
     "codex",
     "openai",
-    "account",
+    "profile",
     "switcher",
     "auth",
     "vscode"
@@ -31,94 +31,94 @@
   "categories": ["Other"],
   "activationEvents": [
     "onStartupFinished",
-    "onView:codexAccountsView",
-    "onCommand:codexAccounts.add",
-    "onCommand:codexAccounts.switch",
-    "onCommand:codexAccounts.showActive",
-    "onCommand:codexAccounts.openStorage",
-    "onCommand:codexAccounts.reloadWindow",
-    "onCommand:codexAccounts.remove",
-    "onCommand:codexAccounts.refreshView"
+    "onView:codexProfilesView",
+    "onCommand:codexProfiles.add",
+    "onCommand:codexProfiles.switch",
+    "onCommand:codexProfiles.showActive",
+    "onCommand:codexProfiles.openStorage",
+    "onCommand:codexProfiles.reloadWindow",
+    "onCommand:codexProfiles.remove",
+    "onCommand:codexProfiles.refreshView"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "codexAccountsContainer",
+          "id": "codexProfilesContainer",
           "title": "Codex Switcher",
           "icon": "media/codex-switcher.svg"
         }
       ]
     },
     "views": {
-      "codexAccountsContainer": [
+      "codexProfilesContainer": [
         {
           "type": "webview",
-          "id": "codexAccountsView",
-          "name": "Accounts"
+          "id": "codexProfilesView",
+          "name": "Profiles"
         }
       ]
     },
     "commands": [
       {
-        "command": "codexAccounts.add",
-        "title": "Codex Accounts: Add Account",
+        "command": "codexProfiles.add",
+        "title": "Codex Profiles: Add Profile",
         "icon": "$(add)"
       },
       {
-        "command": "codexAccounts.switch",
-        "title": "Codex Accounts: Switch Account",
-        "icon": "$(account)"
+        "command": "codexProfiles.switch",
+        "title": "Codex Profiles: Switch Profile",
+        "icon": ""
       },
       {
-        "command": "codexAccounts.showActive",
-        "title": "Codex Accounts: Show Active Account",
+        "command": "codexProfiles.showActive",
+        "title": "Codex Profiles: Show Active Profile",
         "icon": "$(eye)"
       },
       {
-        "command": "codexAccounts.openStorage",
-        "title": "Codex Accounts: Open Storage Folder",
+        "command": "codexProfiles.openStorage",
+        "title": "Codex Profiles: Open Storage Folder",
         "icon": "$(folder-opened)"
       },
       {
-        "command": "codexAccounts.reloadWindow",
-        "title": "Codex Accounts: Reload VS Code Window",
+        "command": "codexProfiles.reloadWindow",
+        "title": "Codex Profiles: Reload VS Code Window",
         "icon": "$(refresh)"
       },
       {
-        "command": "codexAccounts.remove",
-        "title": "Codex Accounts: Remove Saved Account",
+        "command": "codexProfiles.remove",
+        "title": "Codex Profiles: Remove Saved Profile",
         "icon": "$(trash)"
       },
       {
-        "command": "codexAccounts.refreshView",
-        "title": "Codex Accounts: Refresh View",
+        "command": "codexProfiles.refreshView",
+        "title": "Codex Profiles: Refresh View",
         "icon": "$(refresh)"
       }
     ],
     "configuration": {
-      "title": "Codex Account Switcher",
+      "title": "Codex Profile Switcher",
       "properties": {
-        "codexAccountSwitcher.codexHome": {
+        "codexProfileSwitcher.codexHome": {
           "type": "string",
           "default": "",
           "description": "Codex home path. Defaults to ~/.codex."
         },
-        "codexAccountSwitcher.switcherHome": {
+        "codexProfileSwitcher.switcherHome": {
           "type": "string",
           "default": "",
           "description": "Switcher storage path. Defaults to ~/.codex-switcher."
         },
-        "codexAccountSwitcher.promptReloadAfterSwitch": {
+        "codexProfileSwitcher.promptReloadAfterSwitch": {
           "type": "boolean",
           "default": true,
-          "description": "Ask to reload VS Code after switching Codex account."
+          "description": "Ask to reload VS Code after switching Codex profile."
         },
-        "codexAccountSwitcher.autoUseNewAccount": {
+        "codexProfileSwitcher.autoUseNewProfile": {
           "type": "boolean",
           "default": false,
-          "description": "Automatically activate newly added Codex account after login."
+          "description": "Automatically activate newly added Codex profile after login."
         }
       }
     }
