@@ -4,6 +4,7 @@
   "description": "Switch Codex auth.json between multiple local sessions.",
   "version": "0.0.1",
   "publisher": "luccasoliva",
+  "icon": "media/icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -28,7 +29,9 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onStartupFinished",
     "onView:codexSessionsView",
@@ -69,7 +72,7 @@
       {
         "command": "codexSessions.switch",
         "title": "Codex Sessions: Switch Session",
-        "icon": ""
+        "icon": "$(account)"
       },
       {
         "command": "codexSessions.showActive",

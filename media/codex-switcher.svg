@@ -1,12 +1,40 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="#C5C5C5" xmlns="http://www.w3.org/2000/svg">
-  <!-- Outer codex/core frame -->
-  <path d="M12 2.75L19.25 6.875V15.125L12 19.25L4.75 15.125V6.875L12 2.75ZM12 4.45L6.25 7.725V14.275L12 17.55L17.75 14.275V7.725L12 4.45Z"></path>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"></stop>
+      <stop offset="0.52" stop-color="#111827"></stop>
+      <stop offset="1" stop-color="#1E293B"></stop>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="76" y1="104" x2="180" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"></stop>
+      <stop offset="1" stop-color="#60A5FA"></stop>
+    </linearGradient>
+  </defs>
+
+  <!-- App tile -->
+  <rect x="16" y="16" width="224" height="224" rx="48" fill="url(#bg)"></rect>
+  <rect x="18.5" y="18.5" width="219" height="219" rx="45.5" stroke="#334155" stroke-width="5"></rect>
+
+  <!-- Terminal window -->
+  <rect x="52" y="56" width="152" height="108" rx="20" fill="#0B1220" stroke="#E5E7EB" stroke-width="8"></rect>
+  <path d="M56 88H200" stroke="#334155" stroke-width="6" stroke-linecap="round"></path>
+
+  <!-- Window controls -->
+  <circle cx="78" cy="73" r="5" fill="#38BDF8"></circle>
+  <circle cx="96" cy="73" r="5" fill="#64748B"></circle>
+  <circle cx="114" cy="73" r="5" fill="#64748B"></circle>
 
   <!-- Terminal prompt -->
-  <path d="M8.05 9.15L10.35 11.45L8.05 13.75L7 12.7L8.25 11.45L7 10.2L8.05 9.15Z"></path>
-  <path d="M10.75 13.4H15.75V14.9H10.75V13.4Z"></path>
+  <path d="M84 108L106 128L84 148" stroke="#38BDF8" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"></path>
 
-  <!-- Account/session switch arrows -->
-  <path d="M15.6 3.9H19.8V8.1H18.3V6.35L15.95 8.7L14.9 7.65L17.25 5.3H15.6V3.9Z"></path>
-  <path d="M8.4 20.1H4.2V15.9H5.7V17.65L8.05 15.3L9.1 16.35L6.75 18.7H8.4V20.1Z"></path>
+  <!-- Cursor -->
+  <path d="M122 146H162" stroke="#E5E7EB" stroke-width="11" stroke-linecap="round"></path>
+
+  <!-- Session switch arrows -->
+  <path d="M75 192H158" stroke="url(#accent)" stroke-width="10" stroke-linecap="round"></path>
+  <path d="M154 180L170 192L154 204" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path>
+
+  <path d="M181 212H98" stroke="url(#accent)" stroke-width="10" stroke-linecap="round"></path>
+  <path d="M102 200L86 212L102 224" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path>
 </svg>

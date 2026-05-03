@@ -217,10 +217,10 @@ async function updateStatusBar(): Promise<void> {
   const active = await getActiveSession();
 
   if (active) {
-    statusBar.text = ` Codex: ${active.name}`;
+    statusBar.text = `$(terminal) Codex: ${active.name}`;
     statusBar.tooltip = `Active Codex session: ${active.name}\nClick to switch session.`;
   } else {
-    statusBar.text = " Codex: No session";
+    statusBar.text = "$(terminal) Codex: No session";
     statusBar.tooltip = "No Codex session tracked. Click to open Codex Session Switcher.";
   }
 
