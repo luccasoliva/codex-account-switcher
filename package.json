@@ -5,10 +5,25 @@
   "version": "0.0.1",
   "publisher": "luccasoliva",
   "license": "MIT",
-  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/luccasoliva/codex-account-switcher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/luccasoliva/codex-account-switcher/issues"
+  },
+  "homepage": "https://github.com/luccasoliva/codex-account-switcher#readme",
+  "keywords": [
+    "codex",
+    "openai",
+    "account",
+    "switcher",
+    "auth",
+    "vscode"
+  ],
+  "galleryBanner": {
+    "color": "#111827",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -41,7 +56,7 @@
         {
           "type": "webview",
           "id": "codexAccountsView",
-          "name": ""
+          "name": "Accounts"
         }
       ]
     },
@@ -54,7 +69,7 @@
       {
         "command": "codexAccounts.switch",
         "title": "Codex Accounts: Switch Account",
-        "icon": "media/codex-switcher.svg"
+        "icon": "$(account)"
       },
       {
         "command": "codexAccounts.showActive",
@@ -111,7 +126,8 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "vscode:prepublish": "npm run compile"
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
